@@ -46,10 +46,11 @@
   const client_id = params.get("client_id");
   const redirect_uri = params.get("redirect_uri");
   const state = params.get("state");
+  const issue_code_url = SB_URL ? SB_URL.replace(/\/+$/, "") + "/functions/v1/oauth/issue_code" : null;
 
   document.getElementById("sb_url").textContent = SB_URL || "";
 
-  if (!SB_URL || !SB_ANON_KEY || !client_id || !redirect_uri || !state) {
+  if (!SB_URL || !SB_ANON_KEY || !client_id || !redirect_uri || !state || !issue_code_url) {
     document.getElementById("err").textContent = "Missing parameters";
     throw new Error("Missing parameters");
   }
@@ -89,7 +90,7 @@
 
       if (!access_token) throw new Error("No session token after verify");
 
-      const resp = await fetch("./issue_code", {
+      const resp = await fetch(issue_code_url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
