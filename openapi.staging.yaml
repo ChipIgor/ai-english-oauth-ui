@@ -1,0 +1,170 @@
+openapi: 3.0.3
+info:
+  title: AI English Bus API (staging)
+  version: "1.1.0"
+  description: |
+    Supabase Edge Function "bus" for AI English assistant (staging).
+    Single endpoint; operation selected by JSON body field "op".
+
+servers:
+  - url: https://xvxyjpwekqqffjsogpvp.supabase.co
+
+paths:
+  /functions/v1/bus:
+    post:
+      operationId: busDispatch
+      summary: Bus dispatcher (health, whoami, materials_create, extract_draft, select_from_draft, commit_selected, srs_due, srs_review, errors_add, chunks_add, session_start, upsert_profile, log_turn)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [op]
+              properties:
+                op:
+                  type: string
+                  enum:
+                    - health
+                    - whoami
+                    - materials_create
+                    - extract_draft
+                    - select_from_draft
+                    - commit_selected
+                    - srs_due
+                    - srs_seed
+                    - turn_bundle
+                    - srs_review
+                    - errors_add
+                    - chunks_add
+                    - session_start
+                    - upsert_profile
+                    - log_turn
+                    - get_profile
+
+                # common
+                request_id:
+                  type: string
+                  description: Idempotency key
+                mode:
+                  type: string
+                  example: coach
+                user_content:
+                  type: string
+                assistant_content:
+                  type: string
+
+                # materials_create
+                source_type:
+                  type: string
+                  example: text
+                title:
+                  type: string
+                source_url:
+                  type: string
+                  nullable: true
+                raw_text:
+                  type: string
+                  nullable: true
+                meta:
+                  type: object
+                  nullable: true
+                  additionalProperties: true
+
+                # extract_draft
+                material_id:
+                  type: string
+                  format: uuid
+                draft_json:
+                  type: object
+                  additionalProperties: true
+                ttl_days:
+                  type: integer
+                  example: 7
+
+                # select_from_draft
+                draft_id:
+                  type: string
+                  format: uuid
+                selected_json:
+                  type: object
+                  additionalProperties: true
+
+                # turn_bundle
+                errors:
+                  type: array
+                  items:
+                    type: object
+                chunks:
+                  type: array
+                  items:
+                    type: object
+
+                # srs_review
+                card_id:
+                  type: string
+                  format: uuid
+                rating:
+                  type: integer
+                  example: 4
+
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: Bad Request / Unknown op / DB error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing auth / Invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        data:
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [ok, error]
+      properties:
+        ok:
+          type: boolean
+          enum: [false]
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
